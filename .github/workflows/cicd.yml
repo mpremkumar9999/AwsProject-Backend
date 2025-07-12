@@ -1,0 +1,35 @@
+name: Deploy AwsProject-Backend
+
+on:
+  push:
+    branches:
+      - main  # or "master" if that’s your default branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker Image
+        run: docker build -t mpremkumar9999/awsproject-backend .
+
+      - name: Push Docker Image
+        run: docker push mpremkumar9999/awsproject-backend:latest
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Pull Docker image
+        run: docker pull mpremkumar9999/awsproject-backend:latest
+
+      - name: Remove old container
+        run: docker rm -f awsproject-backend-container || true
+
+      - name: Run new container
+        run: docker run -d -p 5555:5555 --name awsproject-backend-container -e MONGO_PASSWORD='${{ secrets.MONGO_PASSWORD }}' mpremkumar9999/awsproject-backend
